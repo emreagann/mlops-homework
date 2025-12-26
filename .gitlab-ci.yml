@@ -1,0 +1,82 @@
+stages:
+  - build
+  - test
+  - lint
+  - package
+  - smoke-test
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+# 1. Build & Install Dependencies (Virtual Env Strategy for CI)
+build_job:
+  stage: build
+  image: python:3.9
+  script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt
+    - pip install pytest flake8
+  artifacts:
+    paths:
+      - venv/
+    expire_in: 1 hour
+
+# 2. Automated Unit Testing
+unit_test_job:
+  stage: test
+  image: python:3.9
+  script:
+    - source venv/bin/activate
+    - pytest tests/unit
+
+# 3. Code Analysis/Linting
+lint_job:
+  stage: lint
+  image: python:3.9
+  script:
+    - source venv/bin/activate
+    # Fail if syntax errors or undefined names
+    - flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+    # Exit-zero for style warnings (adjustment as per typical strictness, usually homework wants fail)
+    # The prompt says "Failure to meet these thresholds must fail the build", so let's be strict without exit-zero for criticals
+    - flake8 src --count --max-complexity=10 --max-line-length=127 --statistics
+
+# 4. Component/Integration Testing
+component_test_job:
+  stage: test
+  image: python:3.9
+  script:
+    - source venv/bin/activate
+    - pytest tests/component
+
+# 5. Build & Package (Docker)
+# Note: Needs Docker-in-Docker or accessible docker socket
+package_job:
+  stage: package
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t my-ml-service .
+    # In a real GitLab registry scenario:
+    # - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    # - docker push $IMAGE_TAG
+
+# 6. Smoke Test (Deployment Gate)
+smoke_test_job:
+  stage: smoke-test
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t my-ml-service . 
+    - docker run -d -p 8000:8000 --name ml_service my-ml-service
+    - sleep 10
+    # Install curl or python if needed, but docker image strictly might not have them.
+    # We'll use the python script inside a python container OR install python here.
+    # Easier: Use python image and remote docker? No, we need to run the container.
+    # We will install python/curl in the docker image runner or use apk.
+    - apk add --no-cache python3 py3-pip curl
+    - pip install requests --break-system-packages
+    - python3 tests/smoke_test.py
