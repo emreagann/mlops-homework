@@ -19,27 +19,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # STAGE 2: Unit Tests (Part 1 Requirement)
       - name: Run Unit Tests
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/test_unit.py
 
-      # STAGE 2.5: Component Tests (Part 2 Requirement)
       - name: Run Component Tests
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/test_component.py
 
-      # STAGE 3: Linting (Part 1 Requirement)
       - name: Lint with Flake8
         run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      # STAGE 4: Package (Part 2 Requirement)
       - name: Package (Docker Build)
         run: docker build -t prediction-service:latest .
 
-      # STAGE 5: Smoke Test (Part 2 Requirement)
       - name: Smoke Test (Deployment Verification)
         run: |
           # Spin up the container
