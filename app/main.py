@@ -10,7 +10,6 @@ class PredictionRequest(BaseModel):
 @app.post("/predict")
 def predict(request: PredictionRequest):
     try:
-        # Part 1 Integration: Using the feature logic
         bucket_index = hash_feature(request.feature)
         return {"bucket_index": bucket_index, "status": "success"}
     except Exception as e:
