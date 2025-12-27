@@ -1,0 +1,42 @@
+name: MLOps CI/CD Pipeline
+
+on: [push]
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest flake8 requests
+
+      # STAGE: Build (Setup environment)
+      - name: Build Environment
+        run: echo "Environment Prepared"
+
+      # STAGE: Unit Test
+      - name: Run Unit Tests
+        run: pytest tests/test_unit.py
+
+      # STAGE: Lint
+      - name: Lint with Flake8
+        run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # STAGE: Package (Build Docker Image)
+      - name: Package (Docker Build)
+        run: docker build -t prediction-service:latest .
+
+      # STAGE: Smoke Test
+      - name: Smoke Test (Deployment Verification)
+        run: |
+          docker run -d -p 8000:8000 --name service prediction-service:latest
+          sleep 5
+          python smoke_test.py
+          docker stop service
