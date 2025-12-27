@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.features import hash_feature
 
@@ -9,5 +9,13 @@ class PredictionRequest(BaseModel):
 
 @app.post("/predict")
 def predict(request: PredictionRequest):
-    result = hash_feature(request.feature)
-    return {"result": result}
+    try:
+        # Part 1 Integration: Using the feature logic
+        bucket_index = hash_feature(request.feature)
+        return {"bucket_index": bucket_index, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

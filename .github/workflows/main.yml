@@ -14,29 +14,42 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt pytest flake8 requests
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      # STAGE: Build (Setup environment)
-      - name: Build Environment
-        run: echo "Environment Prepared"
-
-      # STAGE: Unit Test
+      # STAGE 2: Unit Tests (Part 1 Requirement)
       - name: Run Unit Tests
-        run: pytest tests/test_unit.py
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/test_unit.py
 
-      # STAGE: Lint
+      # STAGE 2.5: Component Tests (Part 2 Requirement)
+      - name: Run Component Tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest tests/test_component.py
+
+      # STAGE 3: Linting (Part 1 Requirement)
       - name: Lint with Flake8
         run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      # STAGE: Package (Build Docker Image)
+      # STAGE 4: Package (Part 2 Requirement)
       - name: Package (Docker Build)
         run: docker build -t prediction-service:latest .
 
-      # STAGE: Smoke Test
+      # STAGE 5: Smoke Test (Part 2 Requirement)
       - name: Smoke Test (Deployment Verification)
         run: |
+          # Spin up the container
           docker run -d -p 8000:8000 --name service prediction-service:latest
-          sleep 5
+          
+          # Wait for boot
+          sleep 15
+          
+          # Run verification script
           python smoke_test.py
+          
+          # Cleanup
           docker stop service

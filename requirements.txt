@@ -1,6 +1,7 @@
 fastapi
 uvicorn
+pydantic
 requests
 pytest
+httpx
 flake8
-pydantic
