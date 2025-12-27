@@ -1,8 +1,11 @@
 import requests
 import time
 
+import os
+
 def verify_service():
-    url = "http://localhost:8000/predict"
+    url = os.environ.get("API_URL", "http://localhost:8000/predict")
+    print(f"Testing Service at: {url}")
     data = {"feature": "test_value"}
     
     for _ in range(5):  # Retry while container boots

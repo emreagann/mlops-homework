@@ -59,4 +59,5 @@ smoke_test_job:
     - sleep 10
     - apk add --no-cache python3 py3-pip
     - pip install requests --break-system-packages
+    - export API_URL="http://docker:8000/predict"
     - python3 smoke_test.py
