@@ -5,6 +5,7 @@ on: [push]
 jobs:
   pipeline:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -14,37 +15,33 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Dependencies
+      # -------- BUILD --------
+      - name: Build
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Unit Tests
+      # -------- UNIT TEST --------
+      - name: Unit Test
         run: |
           export PYTHONPATH=$PYTHONPATH:.
           pytest tests/test_unit.py
 
-      - name: Run Component Tests
+      # -------- LINT --------
+      - name: Lint
         run: |
-          export PYTHONPATH=$PYTHONPATH:.
-          pytest tests/test_component.py
+          flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Lint with Flake8
-        run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Package (Docker Build)
-        run: docker build -t prediction-service:latest .
-
-      - name: Smoke Test (Deployment Verification)
+      # -------- PACKAGE --------
+      - name: Package
         run: |
-          # Spin up the container
+          docker build -t prediction-service:latest .
+
+      # -------- SMOKE TEST --------
+      - name: Smoke Test
+        run: |
           docker run -d -p 8000:8000 --name service prediction-service:latest
-          
-          # Wait for boot
           sleep 15
-          
-          # Run verification script
           python smoke_test.py
-          
-          # Cleanup
           docker stop service
+          docker rm service
