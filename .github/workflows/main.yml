@@ -37,14 +37,10 @@ jobs:
 
       - name: Smoke Test (Deployment Verification)
         run: |
-          # Spin up the container
           docker run -d -p 8000:8000 --name service prediction-service:latest
           
-          # Wait for boot
           sleep 15
           
-          # Run verification script
           python smoke_test.py
           
-          # Cleanup
           docker stop service
